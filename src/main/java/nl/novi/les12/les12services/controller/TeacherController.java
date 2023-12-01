@@ -1,7 +1,10 @@
 package nl.novi.les12.les12services.controller;
 
 import jakarta.validation.Valid;
+import nl.novi.les12.les12services.Exceptions.ValidationException;
 import nl.novi.les12.les12services.dto.TeacherDto;
+import nl.novi.les12.les12services.dto.TeacherInputDto;
+import nl.novi.les12.les12services.dto.TeacherOutputDto;
 import nl.novi.les12.les12services.service.TeacherService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -13,6 +16,8 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 
+import static nl.novi.les12.les12services.controller.ControllerHelper.checkForBindingResult;
+
 @RestController
 @RequestMapping("/teachers")
 public class TeacherController {
@@ -23,38 +28,34 @@ public class TeacherController {
         this.service = service;
     }
 
-//    @GetMapping
-//    public ResponseEntity<List<Teacher>> getAllTeachers() {
-//        return ResponseEntity.ok(teacherRepository.findAll());
-//    }
+    @GetMapping
+    public ResponseEntity<List<TeacherOutputDto>> getAllTeachers() {
+        return ResponseEntity.ok(service.getTeachers());
+    }
+
+    @GetMapping("/{id}")
 //
 //    @GetMapping("/after")
 //    public ResponseEntity<List<Teacher>> getTeachersAfter(@RequestParam LocalDate date) {
 //        return ResponseEntity.ok(teacherRepository.findByDobAfter(date));
 //    }
 
+
     @PostMapping
-    public ResponseEntity<Object> createTeacher(@Valid @RequestBody TeacherDto teacherDto, BindingResult br) {
+    public ResponseEntity<TeacherOutputDto> createTeacher(@Valid @RequestBody TeacherInputDto teacherDto, BindingResult br) {
 
         if (br.hasFieldErrors()) {
-            StringBuilder sb = new StringBuilder();
-            for (FieldError fe : br.getFieldErrors()) {
-                sb.append(fe.getField());
-                sb.append(" : ");
-                sb.append(fe.getDefaultMessage());
-                sb.append("\n");
-            }
-            return ResponseEntity.badRequest().body(sb.toString());
+           throw new ValidationException(checkForBindingResult(br));
         }
         else {
-            teacherDto = service.createTeacher(teacherDto);
+            TeacherOutputDto teacherOutputDto = service.createTeacher(teacherDto);
 
             URI uri = URI.create(
                     ServletUriComponentsBuilder
                             .fromCurrentRequest()
-                            .path("/" + teacherDto.id).toUriString());
+                            .path("/" + teacherOutputDto.id).toUriString());
 
-            return ResponseEntity.created(uri).body(teacherDto);
+            return ResponseEntity.created(uri).body(teacherOutputDto);
         }
     }
 }
